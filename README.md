@@ -1,32 +1,32 @@
-### "Countdown Timer Video Generator"
+### README for "Countdown Timer Video Generator"
 
 ---
 
-## Descripción
+## Description
 
-Este script genera un video que muestra un temporizador de cuenta regresiva con una alarma al final. Utiliza bibliotecas como **Pillow**, **moviepy**, y **pydub** para crear los cuadros del temporizador, agregar un sonido de alarma y combinar todo en un video final.
+This script generates a video displaying a countdown timer with an alarm at the end. It uses libraries such as **Pillow**, **moviepy**, and **pydub** to create timer frames, add an alarm sound, and combine everything into a final video.
 
 ---
 
-## Requisitos del sistema
+## System Requirements
 
-Antes de ejecutar el script, asegúrate de cumplir con los siguientes requisitos:
+Before running the script, make sure you meet the following requirements:
 
-### Dependencias de Python
-- Python 3.8 o superior.
-- Las bibliotecas necesarias pueden instalarse ejecutando:
+### Python Dependencies
+- Python 3.8 or higher.
+- Required libraries can be installed by running:
   ```bash
   pip install pillow moviepy pydub
   ```
 
-### Dependencias del sistema
-- **FFmpeg**: Necesario para procesar videos y audio. Instálalo según tu sistema operativo:
+### System Dependencies
+- **FFmpeg**: Required for video and audio processing. Install it according to your operating system:
   - **Ubuntu/Debian**:  
     ```bash
     sudo apt update
     sudo apt install ffmpeg
     ```
-  - **Windows**: Descarga el ejecutable desde [FFmpeg.org](https://ffmpeg.org/download.html) y agrégalo al `PATH`.
+  - **Windows**: Download the executable from [FFmpeg.org](https://ffmpeg.org/download.html) and add it to your `PATH`.
   - **MacOS**:  
     ```bash
     brew install ffmpeg
@@ -34,62 +34,60 @@ Antes de ejecutar el script, asegúrate de cumplir con los siguientes requisitos
 
 ---
 
-## Configuración del entorno
+## Environment Setup
 
-1. **Clona o descarga este repositorio.**
+1. **Clone or download this repository.**
    ```bash
-   git clone https://github.com/usuario/timer-generator.git
+   git clone https://github.com/user/timer-generator.git
    cd timer-generator
    ```
 
-2. **Crea un entorno virtual (opcional pero recomendado).**
+2. **Create a virtual environment (optional but recommended).**
    ```bash
    python -m venv venv
-   source venv/bin/activate   # En Linux/MacOS
-   venv\Scripts\activate      # En Windows
+   source venv/bin/activate   # On Linux/MacOS
+   venv\Scripts\activate      # On Windows
    ```
 
-3. **Instala las dependencias.**
+3. **Install dependencies.**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Verifica que FFmpeg esté instalado correctamente.**
-   Ejecuta el siguiente comando:
+4. **Ensure FFmpeg is installed correctly.**
+   Run the following command:
    ```bash
    ffmpeg -version
    ```
-   Esto debería mostrar la versión de FFmpeg instalada.
+   This should display the installed FFmpeg version.
 
 ---
 
-## Uso del script
+## Script Usage
 
-El script se ejecuta desde la línea de comandos y acepta varios argumentos:
+The script runs from the command line and accepts several arguments:
 
-### Sintaxis básica
+### Basic Syntax
 ```bash
-python timer_generator.py -m <minutos> -s <segundos> -a <archivo_alarma> -o <archivo_salida>
+python timer_generator.py -m <minutes> -s <seconds> -a <alarm_file> -o <output_file>
 ```
 
-### Argumentos disponibles
-- `-m` o `--minutes`: Minutos para el temporizador (por defecto `0`).
-- `-s` o `--seconds`: Segundos para el temporizador (por defecto `0`).
-- `-a` o `--alarm`: Archivo de audio para la alarma (por defecto `alarm.mp3`). Si no existe, se generará un sonido de alarma predeterminado.
-- `-o` o `--outputfile`: Nombre del archivo de video generado (por defecto `timer.mp4`).
+### Available Arguments
+- `-m` or `--minutes`: Minutes for the timer (default `0`).
+- `-s` or `--seconds`: Seconds for the timer (default `0`).
+- `-a` or `--alarm`: Audio file for the alarm (default `alarm.mp3`). If not provided, a default alarm sound will be generated.
+- `-o` or `--outputfile`: Name of the generated video file (default `timer.mp4`).
 
-### Ejemplo
+### Example
 ```bash
 python timer_generator.py -m 1 -s 30 -a custom_alarm.wav -o my_timer.mp4
 ```
 
-Este comando crea un temporizador de 1 minuto y 30 segundos con la alarma `custom_alarm.wav`, y guarda el video como `my_timer.mp4`.
+This command creates a timer for 1 minute and 30 seconds with the alarm `custom_alarm.wav`, and saves the video as `my_timer.mp4`.
 
 ---
 
-## Notas importantes
+## Important Notes
 
-1. **Fuentes predeterminadas**: El script usa la fuente `DejaVuSans-Bold.ttf` para renderizar el texto. Si no está disponible, se usará una fuente por defecto.
-
----
+1. **Default Fonts**: The script uses the `DejaVuSans-Bold.ttf` font to render text. If unavailable, a default font will be used.
 
