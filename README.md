@@ -1,4 +1,4 @@
-### README para "Countdown Timer Video Generator"
+### "Countdown Timer Video Generator"
 
 ---
 
