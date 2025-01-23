@@ -58,10 +58,10 @@ def generate_timer_frames(duration, frame_rate, output_folder, alarm_duration=5)
         print("⚠️ The specified font could not be found. Using default font.")
         font = ImageFont.load_default()
 
-    total_frames = int(duration * frame_rate)
+    total_frames = int(duration * frame_rate) +1
 
     print("Building frames...")
-    for frame in range(total_frames + 1):
+    for frame in range(total_frames):
         img = Image.new("RGB", (1280, 720), color="black")
         draw = ImageDraw.Draw(img)
         current_time = duration - (frame / frame_rate)
@@ -75,7 +75,7 @@ def generate_timer_frames(duration, frame_rate, output_folder, alarm_duration=5)
         img.save(os.path.join(output_folder, f"frame_{frame:04d}.png"))
 
     if current_time == 0:
-        for frame in range(total_frames + 1, total_frames + 1 + frame_rate * alarm_duration):
+        for frame in range(total_frames, total_frames + frame_rate * alarm_duration):
             img = Image.new("RGB", (1280, 720), color="black")
             draw = ImageDraw.Draw(img)
             time_text = "00:00"
@@ -100,7 +100,7 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
     try:
         generate_timer_frames(duration, frame_rate, frames_folder, alarm_duration)
 
-        total_frames = int(duration * frame_rate) + 1
+        total_frames = int(duration * frame_rate)
         frame_files = [
             os.path.join(frames_folder, f"frame_{i:04d}.png") for i in range(total_frames)
         ]
