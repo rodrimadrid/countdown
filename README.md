@@ -16,7 +16,7 @@ Before running the script, make sure you meet the following requirements:
 - Python 3.8 or higher.
 - Required libraries can be installed by running:
   ```bash
-  pip install pillow moviepy pydub
+  pip install pillow moviepy pydub colorlog
   ```
 
 ### System Dependencies
