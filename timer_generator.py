@@ -23,23 +23,40 @@ def generate_alarm_sound(output_folder, duration=5, frequency=1000):
     return sound_path
 
 
-def prepare_audio_with_silence(timer_duration, alarm_duration, alarm_sound_path, sound_folder):
+def prepare_audio(duration, alarm_duration, alarm_sound_path, sound_folder, background_music_path):
     """
-    Prepares an audio file with silence matching the timer duration 
-    and adds the alarm sound at the end.
-    - `duration`: Duration of the timer in seconds.
+    Prepares an audio file with silence matching the timer duration and adds the alarm sound at the end.
+    - `timer_duration`: Duration of the timer in seconds.
     - `alarm_duration`: Duration of the alarm sound in seconds.
     - `alarm_sound_path`: Path to the alarm sound file.
     - `sound_folder`: Folder where temporary audio files will be stored.
     - `background_music_path`: Path to music background.
     """
-    silence = AudioSegment.silent(duration=timer_duration * 1000)
+    if background_music_path:
+        bg = AudioSegment.from_file(background_music_path)
+        required_ms = duration * 1000
+        bg_ms = len(bg)
+        if bg_ms < required_ms:
+            loops = required_ms // bg_ms + 1
+            looped_bg = bg * loops
+            bg_segment = looped_bg[:required_ms]
+        else:
+            bg_segment = bg[:required_ms]
+    else:
+        bg_segment = AudioSegment.silent(duration=duration * 1000)
 
     if alarm_sound_path == "alarm.mp3":
         alarm_sound_path = generate_alarm_sound(sound_folder, duration=alarm_duration)
     alarm = AudioSegment.from_file(alarm_sound_path)
+    alarm_ms = len(alarm)
+    required_alarm_ms = alarm_duration * 1000
 
-    combined_audio = silence + alarm
+    if alarm_ms < required_alarm_ms:
+        loops = required_alarm_ms // alarm_ms + 1
+        alarm = alarm * loops
+    alarm = alarm[:required_alarm_ms]
+
+    combined_audio = bg_segment + alarm
     output_path = os.path.join(sound_folder, "final_audio_with_alarm.wav")
     combined_audio.export(output_path, format="wav")
     return output_path
@@ -68,14 +85,15 @@ def generate_frame(seconds, output_folder, font, is_alarm=False):
     draw.text(position, time_text, fill=fill_color, font=font)
     img.save(path)
 
-def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="alarm.mp3", alarm_duration=5):
+def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="alarm.mp3", alarm_duration=5, background_music=None):
     """
     Generate a video from timer images and add alarm sound when timer reaches zero.
     - `duration`: Timer duration in seconds.
     - `output_video`: Path to the output video file.
     - `frame_rate`: Frames per second for the video.
     - `alarm_sound`: Path to the alarm sound file.
-    - `alarm_duration`: Duration of the alarm sound in seconds.    
+    - `alarm_duration`: Duration of the alarm sound in seconds.
+    - `background_music`: Path to music background. 
     """
     frames_folder = "timer_frames"
     sound_folder = "sounds"
@@ -123,7 +141,13 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
 
     clip = ImageSequenceClip(frame_files, fps=frame_rate)
 
-    audio_with_alarm = prepare_audio_with_silence(duration, alarm_duration, alarm_sound, sound_folder)
+    audio_with_alarm = prepare_audio(
+        duration,
+        alarm_duration,
+        alarm_sound,
+        sound_folder,
+        background_music
+    )
     audio_clip = AudioFileClip(audio_with_alarm)
     clip = clip.set_audio(audio_clip)
 
@@ -136,7 +160,8 @@ def parse_args():
     parser.add_argument("-s", "--seconds", type=int, default=0, help="Timer seconds.")
     parser.add_argument("-a", "--alarm", type=str, default="alarm.mp3", help="Alarm audio file.")
     parser.add_argument("-o", "--outputfile", type=str, default="timer.mp4", help="Output filename.")
-
+    parser.add_argument("-bm", "--backgroundmusic", type=str, help="Background music file.")
+    
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -144,7 +169,7 @@ if __name__ == "__main__":
     timer_duration = args.minutes * 60 + args.seconds
     FILENAME = args.outputfile
     try:
-        generate_timer_video(duration=timer_duration, output_video=FILENAME, alarm_sound=args.alarm)
+        generate_timer_video(duration=timer_duration, output_video=FILENAME, alarm_sound=args.alarm, background_music=args.backgroundmusic)
         logger.info(f"🎥 Generated video: {FILENAME}")
     except Exception as e:
         logger.error(f"❌ Error generating video: {str(e)}")
