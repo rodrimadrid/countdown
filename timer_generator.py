@@ -1,6 +1,9 @@
 import shutil
 import argparse
 import os
+import sys
+import re
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import ImageSequenceClip, AudioFileClip
 from pydub import AudioSegment
@@ -85,6 +88,10 @@ def generate_frame(seconds, output_folder, font, is_alarm=False):
     draw.text(position, time_text, fill=fill_color, font=font)
     img.save(path)
 
+def load_images_as_numpy(frame_files):
+    """Carga imágenes en memoria como arrays NumPy para evitar que MoviePy las procese una por una."""
+    return [np.array(Image.open(f)) for f in frame_files]
+
 def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="alarm.mp3", alarm_duration=5, background_music=None):
     """
     Generate a video from timer images and add alarm sound when timer reaches zero.
@@ -98,9 +105,20 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
     frames_folder = "timer_frames"
     sound_folder = "sounds"
 
+    base_name, ext = os.path.splitext(output_video)
+    n = base_name[-1]
+    if n.isdigit():
+        file_path = base_name[0:-2] + ext
+        if os.path.exists(file_path):
+            try:
+                shutil.copy(file_path, output_video)
+                logger.info(f"✅ File copied successfully: {file_path}")
+                return
+            except OSError:
+                logger.error(f"❌ Failed to copy the video to '{output_video}'.")
+
     os.makedirs(frames_folder, exist_ok=True)
     os.makedirs(sound_folder, exist_ok=True)
-
 
     font_size = 120
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -139,7 +157,8 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
     alarm_frames = [alarm_path] * (frame_rate * alarm_duration)
     frame_files = countdown_frames + alarm_frames
 
-    clip = ImageSequenceClip(frame_files, fps=frame_rate)
+    clip = ImageSequenceClip(frame_files, fps=frame_rate, load_images=False)
+
 
     audio_with_alarm = prepare_audio(
         duration,
@@ -150,9 +169,39 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
     )
     audio_clip = AudioFileClip(audio_with_alarm)
     clip = clip.set_audio(audio_clip)
-
-    clip.write_videofile(output_video, codec="libx264")
+    clip.write_videofile(output_video, codec="libx265")
     shutil.rmtree(sound_folder, ignore_errors=True)
+
+def parse_timer_expression(expression):
+    pattern = r'm(\d+)|x(\d+)'
+    matches = re.findall(pattern, expression)
+
+    timers = []
+    repeat_sequence = []
+    repeat_count = 1
+
+    for minutes, repeat in matches:
+        if minutes:
+            repeat_sequence.append(int(minutes))
+        elif repeat:
+            repeat_count = int(repeat)
+            timers.extend(repeat_sequence * repeat_count)
+            repeat_sequence = []
+
+    timers.extend(repeat_sequence)
+
+    file_names = []
+    counter = {}
+    for minutes in timers:
+        base_name = f"timer_{minutes}m"
+        if base_name in counter:
+            counter[base_name] += 1
+            file_names.append(f"{base_name}_{counter[base_name]}.mp4")
+        else:
+            counter[base_name] = 1
+            file_names.append(f"{base_name}.mp4")
+
+    return list(zip(timers, file_names))
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Timer video generator.")
@@ -161,7 +210,8 @@ def parse_args():
     parser.add_argument("-a", "--alarm", type=str, default="alarm.mp3", help="Alarm audio file.")
     parser.add_argument("-o", "--outputfile", type=str, default="timer.mp4", help="Output filename.")
     parser.add_argument("-bm", "--backgroundmusic", type=str, help="Background music file.")
-    
+    parser.add_argument("-e", "--expression", type=str, help="Timer expression format (e.g., 'm25m5x2m15' where 'mX' sets minutes and 'xY' sets repetitions).")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -169,7 +219,26 @@ if __name__ == "__main__":
     timer_duration = args.minutes * 60 + args.seconds
     FILENAME = args.outputfile
     try:
-        generate_timer_video(duration=timer_duration, output_video=FILENAME, alarm_sound=args.alarm, background_music=args.backgroundmusic)
-        logger.info(f"🎥 Generated video: {FILENAME}")
+        if args.expression is None:
+            generate_timer_video(
+                duration=timer_duration,
+                output_video=FILENAME,
+                alarm_sound=args.alarm,
+                background_music=args.backgroundmusic
+              )
+            logger.info(f"🎥 Generated video: {FILENAME}")
+        else:
+            timers = parse_timer_expression(args.expression)
+            if not timers:
+                logger.error("❌ No valid timers parsed from expression.")
+                sys.exit(1)
+            for duration, filename in timers:
+                generate_timer_video(
+                    duration=duration * 60,
+                    output_video=filename,
+                    alarm_sound=args.alarm,
+                    background_music=args.backgroundmusic
+                  )
+                logger.info(f"🎥 Generated video: {filename}")
     except Exception as e:
         logger.error(f"❌ Error generating video: {str(e)}")
