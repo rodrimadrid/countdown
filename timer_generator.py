@@ -3,7 +3,6 @@ import argparse
 import os
 import sys
 import re
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import ImageSequenceClip, AudioFileClip
 from pydub import AudioSegment
@@ -88,9 +87,6 @@ def generate_frame(seconds, output_folder, font, is_alarm=False):
     draw.text(position, time_text, fill=fill_color, font=font)
     img.save(path)
 
-def load_images_as_numpy(frame_files):
-    """Carga imágenes en memoria como arrays NumPy para evitar que MoviePy las procese una por una."""
-    return [np.array(Image.open(f)) for f in frame_files]
 
 def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="alarm.mp3", alarm_duration=5, background_music=None):
     """
