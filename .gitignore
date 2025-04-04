@@ -1,3 +1,5 @@
 timer_frames/
 *.mp4
 _pycache_/
+videos_to_merge.txt
+.venv

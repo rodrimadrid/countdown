@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import re
+import subprocess
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import ImageSequenceClip, AudioFileClip
 from pydub import AudioSegment
@@ -165,10 +166,13 @@ def generate_timer_video(duration, output_video, frame_rate=24, alarm_sound="ala
     )
     audio_clip = AudioFileClip(audio_with_alarm)
     clip = clip.set_audio(audio_clip)
-    clip.write_videofile(output_video, codec="libx265")
+    clip.write_videofile(output_video, codec="libx264")
     shutil.rmtree(sound_folder, ignore_errors=True)
 
 def parse_timer_expression(expression):
+    """
+      Parses a timer expression and generates a sequence of timers with corresponding filenames.
+    """
     pattern = r'm(\d+)|x(\d+)'
     matches = re.findall(pattern, expression)
 
@@ -199,13 +203,32 @@ def parse_timer_expression(expression):
 
     return list(zip(timers, file_names))
 
+def merge_videos(video_files, output_file="timer.mp4"):
+    """
+    Merge multiple MP4 video files into a single final video without re-encoding.
+    """
+    list_file = "videos_to_merge.txt"
+
+    with open(list_file, "w") as f:
+        for video in video_files:
+            f.write(f"file '{video}'\n")
+
+    if os.path.exists(output_file):
+        os.remove(output_file)
+
+    command = [
+        "ffmpeg", "-f", "concat", "-safe", "0",
+        "-i", list_file, "-c", "copy", output_file
+    ]
+    subprocess.run(command, check=True)
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Timer video generator.")
-    parser.add_argument("-m", "--minutes", type=int, default=0, help="Timer minutes.")
-    parser.add_argument("-s", "--seconds", type=int, default=0, help="Timer seconds.")
-    parser.add_argument("-a", "--alarm", type=str, default="alarm.mp3", help="Alarm audio file.")
-    parser.add_argument("-o", "--outputfile", type=str, default="timer.mp4", help="Output filename.")
-    parser.add_argument("-bm", "--backgroundmusic", type=str, help="Background music file.")
+    parser = argparse.ArgumentParser(description="Generate a timer video with customizable options.")
+    parser.add_argument("-m", "--minutes", type=int, default=0, help="Number of minutes for the timer.")
+    parser.add_argument("-s", "--seconds", type=int, default=0, help="Additional seconds for the timer.")
+    parser.add_argument("-a", "--alarm", type=str, default="alarm.mp3", help="Path to the alarm sound file (default: alarm.mp3).")
+    parser.add_argument("-o", "--outputfile", type=str, default="timer.mp4", help="Output filename for the generated video (default: timer.mp4).")
+    parser.add_argument("-bm", "--backgroundmusic", type=str, help="Optional background music file for the timer.")
     parser.add_argument("-e", "--expression", type=str, help="Timer expression format (e.g., 'm25m5x2m15' where 'mX' sets minutes and 'xY' sets repetitions).")
 
     return parser.parse_args()
@@ -228,6 +251,7 @@ if __name__ == "__main__":
             if not timers:
                 logger.error("❌ No valid timers parsed from expression.")
                 sys.exit(1)
+            timers_filenames = [filename for _, filename in timers]
             for duration, filename in timers:
                 generate_timer_video(
                     duration=duration * 60,
@@ -235,6 +259,9 @@ if __name__ == "__main__":
                     alarm_sound=args.alarm,
                     background_music=args.backgroundmusic
                   )
-                logger.info(f"🎥 Generated video: {filename}")
+            merge_videos(timers_filenames, FILENAME)
+            for filename in timers_filenames:
+                os.remove(filename)
+            logger.info(f"🎥 Generated video: {FILENAME}")
     except Exception as e:
         logger.error(f"❌ Error generating video: {str(e)}")
